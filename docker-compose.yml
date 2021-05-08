@@ -1,0 +1,43 @@
+version: '2.1'
+services:
+    postgres:
+        image: postgres:9.6
+        environment:
+            - POSTGRES_USER=airflow
+            - POSTGRES_PASSWORD=airflow
+            - POSTGRES_DB=airflow
+    webserver:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        restart: always
+        depends_on:
+            - postgres
+        environment:
+            - LOAD_EX=n
+            - EXECUTOR=Local
+            - POSTGRES_USER=airflow
+            - POSTGRES_PASSWORD=airflow
+            - POSTGRES_DB=airflow
+            - POSTGRES_HOST=postgres
+            - POSTGRES_PORT=5432
+            - LOGS_S3_BUCKET=s3://dont-care/logs
+            - ENABLE_REMOTE_LOGGING=False
+            - REMOTE_LOGIN_CONN_ID=MyS3Conn
+            - AIRFLOW_BASE_URL=http://localhost:8083
+            - AIRFLOW_ENVIRONMENT=dev
+            - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+            - HOME=/usr/local/airflow
+            - AIRFLOW__CORE__FERNET_KEY=t9m6hdv+h8jWOZFzRtsGCVvupKQqfm5YtgM+/c97NCM=
+
+        volumes:
+            - ./dags:/usr/local/airflow/dags
+        ports:
+            - "8083:8080"
+        command: webserver
+        healthcheck:
+            test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
+            interval: 30s
+            timeout: 30s
+            retries: 3
+
